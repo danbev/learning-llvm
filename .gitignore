@@ -1,2 +1,6 @@
 main
 lang.o
+print
+print.o
+print.ll
+print.s
