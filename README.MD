@@ -131,6 +131,17 @@ type i32 into %2 as a pointer to i32.
 Load a i32 from %2 (which is a pointer) which I'm guessing is dereferenced?
 
 
+#### arrays
+Are declared like this:
+```
+[nr x type]
+```
+For example:
+```
+[15 x i8]
+```
+
+
 ### llc
 I LLVM's static compiler which can take a llvm source, for example a `.ll` file
 and outputs assemply source for the target platform.
@@ -168,4 +179,10 @@ Now we can run our executable:
 ```console
 $ ./print
 something....
+```
+
+One can use the `opt` command to generate some useful information in the
+assembly format, like named arguments and labels:
+```console
+$ /usr/bin/opt -S -mem2reg -instnamer print.ll -o print_before_opt.ll
 ```
