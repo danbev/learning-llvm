@@ -141,11 +141,11 @@ $ /usr/bin/clang -emit-llvm -c -S print.c
 ```
 This will generate a file name `print.ll` which can then be passed to `llc`:
 ```console
-$/usr/bin/llc print.ll
+$ /usr/bin/llc print.ll
 ```
 Which will generate a `print.s` file which we can pass to an assembler:
 ```console
-/usr/bin/as print.s -o print.o
+$ /usr/bin/as print.s -o print.o
 ```
 Which will generate an object file named `print.o` which then needs to be
 linked. Now, since [print.c](./print.c) used the c library we need to make sure
