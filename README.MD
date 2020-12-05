@@ -130,3 +130,42 @@ type i32 into %2 as a pointer to i32.
 ```
 Load a i32 from %2 (which is a pointer) which I'm guessing is dereferenced?
 
+
+### llc
+I LLVM's static compiler which can take a llvm source, for example a `.ll` file
+and outputs assemply source for the target platform.
+
+For example, lets take a simple c program and emit the llvm assembly for it:
+```console
+$ /usr/bin/clang -emit-llvm -c -S print.c
+```
+This will generate a file name `print.ll` which can then be passed to `llc`:
+```console
+$/usr/bin/llc print.ll
+```
+Which will generate a `print.s` file which we can pass to an assembler:
+```console
+/usr/bin/as print.s -o print.o
+```
+Which will generate an object file named `print.o` which then needs to be
+linked. Now, since [print.c](./print.c) used the c library we need to make sure
+we link in the correct librarys which would normally be handled by the compiler
+tool chain, like clang or gcc:
+```console
+$ /usr/bin/ld -e main -dynamic-linker /lib64/ld-linux-x86-64.so.2 \
+       /lib64/crt1.o /lib64/crti.o -lc -arch x86_64 print.o  \
+       /lib64/crtn.o -o print
+```
+For some background about the libraries specifed here please see
+[learning-linux-kernel](https://github.com/danbev/learning-linux-kernel#networking).
+If you want to see what gcc would we one can use the following command to
+have gcc show the link command options:
+```console
+$ gcc -### -o print_out print.c
+```
+
+Now we can run our executable:
+```console
+$ ./print
+something....
+```
