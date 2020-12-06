@@ -13,10 +13,24 @@ static double NumVal;
 int gettok() {
   static int LastChar = ' ';
 
-  while(isspace(LastChar)) {
+  while (isspace(LastChar)) {
     LastChar = getchar();
     printf("LastChar: %d\n", LastChar);
   }
+  if (isalpha(LastChar)) {
+    IdentifierStr = LastChar;  // note that IdentifierStr is of type std::string
+    while (isalnum((LastChar = getchar()))) {
+      IdentifierStr += LastChar;
+    }
+    if (IdentifierStr == "def") {
+      return tok_def;
+    }
+    if (IdentifierStr == "extern") {
+      return tok_extern;
+    }
+    return tok_identifier;
+  }
+
 
   return 0;
 }
