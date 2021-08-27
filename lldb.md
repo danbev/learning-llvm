@@ -166,3 +166,17 @@ Running a shell command from within lldg:
 ```console
 (lldb) script print "something"
 ```
+
+### Saving breakpoints
+```console
+(lldb) br s -n something_function
+(lldb) br write -f breakpoints
+(lldb) br s -n something_function2
+(lldb) br write -f breakpoints --append
+```
+Then these can be read using:
+```console
+(lldb) br read -f breakpoints
+```
+`breakpoints` will be a file in the current working directory.
+
