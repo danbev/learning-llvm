@@ -121,6 +121,29 @@ To work around this you can:
 > expr timer_
 DONE
 ```
+And we can also use python, for example:
+```console
+(lldb) br s -p. -X main -G true
+(lldb) br command add -s python
+Enter your Python command(s). Type 'DONE' to end.
+def function (frame, bp_loc, internal_dict):
+    """frame: the lldb.SBFrame for the location at which you stopped
+       bp_loc: an lldb.SBBreakpointLocation for the breakpoint location information
+       internal_dict: an LLDB support object not to be used"""
+print("Line nr: {}".format(frame.GetLineEntry().GetLine()))
+DONE
+(lldb) r
+Process 2989524 launched: '/home/danielbevenius/work/llvm/learning-llvm/main' (x86_64)
+Line nr: 7
+Line nr: 8
+Usage main <source_file>
+Line nr: 9
+Process 2989524 exited with status = 1 (0x00000001)
+```
+
+```console
+(lldb) br s -n some_function -C "thread return 1" -G true
+```
 
 Alternative to adding print statements.
 ```console
