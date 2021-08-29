@@ -10,7 +10,7 @@ Local values are simliar to registers in assembly language and start with `%`.
 https://llvm.org/docs/LangRef.html
 
 #### bitcode
-To generate the gitcode representation:
+To generate the bitcode representation:
 ```console
 $ /usr/bin/clang -emit-llvm -c -o simple.bc simple.c
 ```
