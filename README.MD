@@ -134,7 +134,7 @@ define dso_local i32 @something(i32) #0 {
   ret i32 %4                                                                    
 }
 ```
-First space on the stack will be allocated that can old an i32.
+First space on the stack will be allocated that can hold an i32.
 Next, we store the value in `%0` which is the passed in `nr`, which is stored
 in `%2`.
 Next, the value stored in `%2` will be loaded into `%3` followed by calling
@@ -200,8 +200,8 @@ $ /usr/bin/ld -e main -dynamic-linker /lib64/ld-linux-x86-64.so.2 \
 ```
 For some background about the libraries specifed here please see
 [learning-linux-kernel](https://github.com/danbev/learning-linux-kernel#networking).
-If you want to see what gcc would we one can use the following command to
-have gcc show the link command options:
+If you want to see what gcc would use to link one can use the following command
+to have gcc show the link command options:
 ```console
 $ gcc -### -o print_out print.c
 ```
