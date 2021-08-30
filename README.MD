@@ -10,6 +10,13 @@ Local values are simliar to registers in assembly language and start with `%`.
 https://llvm.org/docs/LangRef.html
 
 #### bitcode
+The following section will work on an example that looks like this:
+```c
+int something(int nr) {
+  return nr + 2;
+}
+```
+
 To generate the bitcode representation (`bc` extension):
 ```console
 $ /usr/bin/clang -emit-llvm -c -o simple.bc simple.c
