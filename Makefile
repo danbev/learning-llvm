@@ -24,6 +24,15 @@ print: print.o
 	       /lib64/crt1.o /lib64/crti.o -lc -arch x86_64 $@.o  \
 	       /lib64/crtn.o -o $@ 
 
+lto_a.o: lto_a.c
+	${CLANG} -flto -g -c -o $@ $<
+
+lto_main.o: lto_main.c
+	${CLANG} -g -c -o $@ $<
+
+lto_main: lto_main.o
+	${CLANG} -flto lto_a.o lto_main.o -o main
+
 .PHONY: clean
 clean: 
-	@${RM} lang.o main print print.o print.s print.ll print_before_opt.ll
+	@${RM} lang.o main print print.o print.s print.ll print_before_opt.ll lto_a.o
