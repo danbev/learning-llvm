@@ -217,3 +217,34 @@ assembly format, like named arguments and labels:
 ```console
 $ /usr/bin/opt -S -mem2reg -instnamer print.ll -o print_before_opt.ll
 ```
+
+### Link Time Optimizations (LTO)
+As then name suggests these are optimizations that the linker can perform on
+all the object files that it is linking, so the linker puts all the objects
+files together and combines them into a single program.
+
+So the linker would merge all the object files (which I think can also be
+llvm bit code files but not sure yet) into one big one and then do optimizations
+the one big merged file. This can allow for optimizations that where not
+discovered/possible in earlier stages but can also introduce scalablitlity
+or memory issues while linking.
+
+So with LTO enabled, by using `-flto
+```console
+$ make lto_a.o
+/usr/bin/clang -flto -c -o lto_a.o lto_a.c
+
+$ file lto_a.o
+lto_a.o: LLVM IR bitcode
+```
+So we can indeed see that this is a LLVM IR bitcode file and we can inspect it
+using:
+```console
+$ llvm-dis lto_a.o -o lto_a.ll
+```
+And we compile lto_main as a normal object file:
+```console
+$ make lto_main.o 
+/usr/bin/clang -c -o lto_main.o lto_main.c 
+```
+

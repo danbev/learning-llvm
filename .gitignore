@@ -1,7 +1,7 @@
 main
-lang.o
 print
-print.o
-print.ll
 print.s
-print_before_opt.ll
+*.ll
+lto_main
+*.o
+*.bc
