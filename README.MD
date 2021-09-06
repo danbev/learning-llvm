@@ -247,4 +247,30 @@ And we compile lto_main as a normal object file:
 $ make lto_main.o 
 /usr/bin/clang -c -o lto_main.o lto_main.c 
 ```
+And finally we compile the executable passing in the LLVM IR bitcode and the
+object code:
+```console
+$ make lto_main
+/usr/bin/clang -flto lto_a.o lto_main.o -o main
+```
 
+### lld (LLVM portable)
+lld is LLVM's linker and supports ELF, COFF, and Mach-O.
+Can be enabled by passing `-fuse-ld=lld` to clang/gcc:
+```
+-fuse-ld=lld
+```
+
+### bfd linker (GNU)
+Is written on top of the [BFD library](https://en.wikipedia.org/wiki/Binary_File_Descriptor_library)
+This is the traditional GNU binutils linker named `ld`.
+```
+-fuse-ld=bfd
+```
+
+### gold linker (GNU)
+Was written to remove the BFD library abstraction layer.
+This is the next/news GNU binutils linker named `gold`:
+```
+-fuse-ld=gold
+```
