@@ -5,3 +5,4 @@ print.s
 lto_main
 *.o
 *.bc
+libuwind

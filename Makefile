@@ -1,4 +1,5 @@
 CXXFLAGS := "-g"
+CXX="clang++"
 LD = /usr/bin/ld
 AS = /usr/bin/as
 CLANG = /usr/bin/clang
@@ -32,6 +33,9 @@ lto_main.o: lto_main.c
 
 lto_main: lto_main.o
 	${CLANG} -flto lto_a.o lto_main.o -o main
+
+libunwind: libunwind.c
+	${CC} -g -o $@ -lunwind $<
 
 .PHONY: clean
 clean: 
