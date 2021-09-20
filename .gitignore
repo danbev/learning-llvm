@@ -6,3 +6,5 @@ lto_main
 *.o
 *.bc
 libuwind
+branch
+branch.s
