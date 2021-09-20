@@ -80,16 +80,19 @@ type:<size>:<abi>:<preferred>
 ### functions declarations
 Are similar to c fuctions syntax:
 ```
-define dsa_local i32 @main(i32 %0, i8** %1) #0 {
+define dso_local i32 @main(i32 %0, i8** %1) #0 {
 
 }
 ```
 dso_local means the compiler may assume that a function or variable marked as
 dso_local will resolve to a symbol within the same linkage unit.
+
 The following `i32` is the return value, followed by the name of the function.
 Notice the `@main` specifies this as a global.
+
 And main takes one i32 which will be stored in %0, and an pointer-to-pointer
 of i8 in %1.
+
 Then we have the following in the body of the function:
 ```
 ; Function Attrs: noinline nounwind optnone uwtable                             
@@ -172,10 +175,72 @@ For example:
 [15 x i8]
 ```
 
+#### Basic blocks
+These begin with an optional label, and end with a termination instruction like
+branch (br) or return (ret).
+
+#### Branch (br)
+The br instruction has two forms, one where there is a condition and one that
+is an unconditional branch.
+```
+br i1, label_if_true, label_if_false
+
+br label_destination
+```
+`i1` is a single bit integer and `i32` would be an 32-bit integer.
+
+For example using [branch.c](./branch.c) we have the following branch in main:
+```llvm
+store i32 2, i32* %6, align 4
+%8 = load i32, i32* %6, align 4
+%9 = icmp eq i32 %8, 2
+br i1 %9, label %10, label %11
+
+10:
+  call void @two()
+  br label %12
+
+11:
+  call void @one()
+  br label %12
+
+12:
+  ret i32 0
+}
+```
+
+#### call
+```
+%7 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([10 x i8], [10 x i8]* @.str.2, i64 0, i64 0)) 
+```
+The first argument is `i32` which is the return value of printf.
+After that we have the signature of printf which is `(i8*, ...)` 
+@prinf is pointer to the function which is followed by the arguments. Now, in
+this case the arguments are retrieved using `getelementptr`
+
+```c
+int printf(const char *format, ...);
+```
+
+#### getelementptr
+Is used to perform address calculations. It takes a a base type that it is
+going to operatate on. The second operand is the base pointer itself.
+
+```
+@.str.2 = private unnamed_addr constant [10 x i8] c"Bajja...\0A\00", align 1
+...
+
+getelementptr inbounds ([10 x i8], [10 x i8]* @.str.2, i64 0, i64 0)) 
+base type: [10 x i8]
+base ptr:  [10 x i8]* @.str.2
+i64 0: dereferences the pointer
+i64 0: is the index.
+```
+The result is the address of the indexed element.
 
 ### llc
 I LLVM's static compiler which can take a llvm source, for example a `.ll` file
-and outputs assemply source for the target platform.
+and outputs assembly source for the target platform.
 
 For example, lets take a simple c program and emit the llvm assembly for it:
 ```console
@@ -273,4 +338,59 @@ Was written to remove the BFD library abstraction layer.
 This is the next/news GNU binutils linker named `gold`:
 ```
 -fuse-ld=gold
+```
+
+### LLVM Exception Handling (eh)
+
+### invoke
+A call inside a try scope will will be replaces by the LLVM frontend with an
+invoke instruction. This instruction has two points of continuation, one for
+a normal successful call, and one if the call raises an exception.
+In the case of an exception the place where the code continues execution is
+called the `landing pad`.
+These are alternative function entry points where an exception structure ref
+and a type info index is passed as arguments.
+
+```
+invoke void @_Z9somethingi(i32 1)                                             
+          to label %9 unwind label %10
+      (if successful) (if throws)
+
+(if successful)
+9:                                                ; preds = %2                  
+  br label %24                                                                  
+                                                                                
+(if throws)
+10:                                               ; preds = %2                  
+  %11 = landingpad { i8*, i32 }   // i8* = exception pointer part, i32=selector value part                                                
+          catch i8* bitcast (i8** @_ZTIi to i8*)                                
+  %12 = extractvalue { i8*, i32 } %11, 0                                        
+  store i8* %12, i8** %6, align 8                                               
+  %13 = extractvalue { i8*, i32 } %11, 1                                        
+  store i32 %13, i32* %7, align 4                                               
+  br label %14        
+```
+
+
+### LLVM tutorial example
+This section follows the [tutorial](https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/LangImpl01.html)
+and contains notes around it.
+
+Building:
+```console
+$ make main
+"clang++" "-g" -o main lang.o main.cc
+```
+Running the example:
+```console
+$ ./main lang.example
+```
+
+### libunwind
+```console
+$ sudo yum install libunwind-devel
+```
+
+```
+$ readelf --debug-dump=frames libunwind
 ```
