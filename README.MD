@@ -52,7 +52,7 @@ attributes #0 = { noinline nounwind optnone uwtable "correctly-rounded-divide-sq
 
 To generate the assemble representation:
 ```console
-$ /usr/bin/clang -emit-llvm -c -S simple.c
+$ /usr/bin/clang -emit-llvm -c -S -o simple.ll simple.c
 ```
 This command will generate a file name `simple.ll`.
 
@@ -196,11 +196,11 @@ store i32 2, i32* %6, align 4
 %9 = icmp eq i32 %8, 2
 br i1 %9, label %10, label %11
 
-10:
+10:                                               ; preds = %2
   call void @two()
   br label %12
 
-11:
+11:                                               ; preds = %2
   call void @one()
   br label %12
 
@@ -208,6 +208,8 @@ br i1 %9, label %10, label %11
   ret i32 0
 }
 ```
+Note that the comment `; preds = %2` is saying that %2 is the predecessor for
+this basic block.
 
 #### call
 ```
@@ -233,10 +235,64 @@ going to operatate on. The second operand is the base pointer itself.
 getelementptr inbounds ([10 x i8], [10 x i8]* @.str.2, i64 0, i64 0)) 
 base type: [10 x i8]
 base ptr:  [10 x i8]* @.str.2
-i64 0: dereferences the pointer
-i64 0: is the index.
+i64 0: base ptr offset, which is a pointer to [10 x i8]
+i64 0: offset into above array  
+```
+These last two indices are somewhat confusing. The first is an offset of the
+base type, and the second is a index into that type.
+```
+@.str.2 = private unnamed_addr constant [3 x i8] c"Ba\0A\00", align 1
+
+getelementptr inbounds ([3 x i8], [3 x i8]* @.str.2, i64 0, i64 0)) 
+                                          |            |     |
+                       +------------------+            |     |
+                       |-------------------------------|-----+
+                       ↓                               |
+                       +-+-+--+-+-+-+-+-+-+            |
+                       |B|a|\n|x|x|x|y|y|y|            |
+                       +-+-+--+-+-+-+-+-+-+            |
+                       [  0  ][ 1  ][  2  ]            |
+                          ^                            |
+                          +----------------------------+
+```
+Notice that the type pointed to by the first offset is an array, in this case
+it is pointing to the same place as the base pointer. If we want to get a
+pointer to an element in this array we use the second index:
+```
+getelementptr inbounds ([3 x i8], [3 x i8]* @.str.2, i64 0, i64 1)) 
+                                          |            |     |
+                       +------------------+            |     |
+                       | +-----------------------------|-----+
+                       ↓ ↓                             |
+                       +-+-+--+-+-+-+-+-+-+            |
+                       |B|a|\n|x|x|x|y|y|y|            |
+                       +-+-+--+-+-+-+-+-+-+            |
+                       [  0  ][ 1  ][  2  ]            |
+                          ^                            |
+                          +----------------------------+
+```
+Notice what happens if we use a larger offset for the first index, this is
+like incrementing a pointer
+```
+
+getelementptr inbounds ([3 x i8], [3 x i8]* @.str.2, i64 1, i64 0)) 
+                                          |            |     |
+                       +------------------+            |     |
+                       |      +------------------------|-----+
+                       ↓      ↓                        |
+                       +-+-+--+-+-+-+-+-+-+            |
+                       |B|a|\n|x|x|x|y|y|y|            |
+                       +-+-+--+-+-+-+-+-+-+            |
+                       [  0  ][ 1  ][  2  ]            |
+                                ^                      |
+                                +----------------------+
 ```
 The result is the address of the indexed element.
+
+#### struct
+```
+%name = type {i8, [3 x i8], i32}
+```
 
 ### llc
 I LLVM's static compiler which can take a llvm source, for example a `.ll` file
@@ -244,7 +300,7 @@ and outputs assembly source for the target platform.
 
 For example, lets take a simple c program and emit the llvm assembly for it:
 ```console
-$ /usr/bin/clang -emit-llvm -c -S print.c
+$ /usr/bin/clang -emit-llvm -S -o print.ll print.c
 ```
 This will generate a file name `print.ll` which can then be passed to `llc`:
 ```console
