@@ -17,14 +17,16 @@ int something(int nr) {
 }
 ```
 
-To generate the bitcode representation (`bc` extension):
+To generate the `bitcode` representation (`bc` extension):
 ```console
 $ /usr/bin/clang -emit-llvm -c -o simple.bc simple.c
 ```
+
 The output `simple.bc` can be converted into assembly representation using:
 ```console
 $ llvm-dis simple.bc -o simple.ll
 ```
+So lets take a look at the output:
 ```text
 ; ModuleID = 'simple.c'
 source_filename = "simple.c"
@@ -47,8 +49,8 @@ attributes #0 = { noinline nounwind optnone uwtable "correctly-rounded-divide-sq
 
 !0 = !{i32 1, !"wchar_size", i32 4}
 !1 = !{!"clang version 9.0.1 (Fedora 9.0.1-2.fc31)"}
-
 ```
+The sections below will go through the fields.
 
 To generate the assemble representation:
 ```console
