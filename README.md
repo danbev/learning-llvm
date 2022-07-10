@@ -63,6 +63,13 @@ And a file in assembly representation can be converted into bitcode using:
 $ llvm-as simple.ll -o simple.bc
 ```
 
+### Demangling
+It can sometime be difficult to read the IR when the front end uses name
+mangling. This can be demangeled using:
+```console
+$ $ cat main.ll | llvm-cxxfilt
+```
+
 #### target datalayout
 Contains information about the endienness and type sizes of the `target triple`
 This is used for some optimisation that require this information.
@@ -76,7 +83,8 @@ This is followed by types which have the format:
 type:<size>:<abi>:<preferred>
 ```
 
-`m:e' stands for name mangling and e specified that elf type mangling is used.
+`m:e' stands for name mangling and `e` specified that `ELF` name mangling is
+used.
 `i64:64` means that 64 bit integer is 64 bits.
 
 ### functions declarations
@@ -86,8 +94,9 @@ define dso_local i32 @main(i32 %0, i8** %1) #0 {
 
 }
 ```
-dso_local means the compiler may assume that a function or variable marked as
-dso_local will resolve to a symbol within the same linkage unit.
+`dso_local` means the compiler may assume that a function or variable marked as
+`dso_local` will resolve to a symbol within the same linkage unit. `dso` stands
+for `dynamic shared object`.
 
 The following `i32` is the return value, followed by the name of the function.
 Notice the `@main` specifies this as a global.
