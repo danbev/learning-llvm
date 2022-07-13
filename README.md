@@ -179,12 +179,138 @@ Load a i32 from %2 (which is a pointer) which I'm guessing is dereferenced?
 #### arrays
 Are declared like this:
 ```
-[nr x type]
+%something = type [nr x type]
 ```
 For example:
 ```
-[15 x i8]
+%something = type [15 x i8]
 ```
+
+### types/object
+Is used to represent a collection of data members in memory. Like a class or
+a struct in some programming languages.
+
+For example, a type with two i32 values:
+```
+%something = type {i32, i32}
+```
+
+Another example with a field and a function pointer:
+```
+%"something_underscore" = type {i32, void (i32)* }
+```
+
+Taking a look at a more complicated example:
+```
+%"unwind::libunwind::_Unwind_Exception" = type { i64, void (i32, %"unwind::libunwind::_Unwind_Exception"*)*, [6 x i64] }
+```
+So the first part is just the name of the variable, and we can see that this is
+a struct where the first member is a i64 value, the second is a function pointer
+which takes a i32, and then a pointer to a struct of this same time).
+
+Now, if we take a look in the rust source code we can find
+`library/unwind/src/libunwind.rs`:
+```rust
+#[repr(C)]                                                                      
+pub struct _Unwind_Exception {                                                  
+    pub exception_class: _Unwind_Exception_Class,                               
+    pub exception_cleanup: _Unwind_Exception_Cleanup_Fn,                        
+    pub private: [_Unwind_Word; unwinder_private_data_size],                    
+}   
+
+pub type _Unwind_Exception_Cleanup_Fn =                                         
+    extern "C" fn(unwind_code: _Unwind_Reason_Code, exception: *mut _Unwind_Exception);
+```
+So we can see that the `_Unwind_Exception_Cleanup_Fn` is the second parameter
+to the function pointer (second member of the struct). So that is only declaring
+the a type. And following that we have:
+```llvm
+ %"unwind::libunwind::_Unwind_Context" = type { [0 x i8] }
+```
+Now, this is also a variable that is declared and the type is an array of size
+0 and of type i8 (1 byte). I think this matched the definition of this enum
+found in `library/unwind/src/libunwind.rs`:
+```rust
+pub enum _Unwind_Context {}
+```
+And notice that this is an empty enum, so it does not have any values but it
+can have associated functions.
+
+
+@vtable.0 = private unnamed_addr constant
+     <{ i8*, [16 x i8], i8*, i8*, i8* }>
+     <{ i8* bitcast (void (i64**)* @"core::ptr::drop_in_place$LT$std..rt..lang_start$LT$$LP$$RP$$GT$..$u7b$$u7b$closure$u7d$$u7d$$GT$::hfd0e41c7184d2d5c" to i8*), [16 x i8] c"\08\00\00\00\00\00\00\00\08\00\00\00\00\00\00\00", i8* bitcast (i32 (i64**)* @"core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h6376c1087f8195c9" to i8*), i8* bitcast (i32 (i64**)* @"std::rt::lang_start::_$u7b$$u7b$closure$u7d$$u7d$::h4a18ec8e9cd2a4c5" to i8*), i8* bitcast (i32 (i64**)* @"std::rt::lang_start::_$u7b$$u7b$closure$u7d$$u7d$::h4a18ec8e9cd2a4c5" to i8*) }>, align 8
+
+```
+; Function Attrs: nonlazybind uwtable                                           
+declare i32 @rust_eh_personality(i32,
+    i32,
+    i64,
+    %"unwind::libunwind::_Unwind_Exception"*,
+    %"unwind::libunwind::_Unwind_Context"*) unnamed_addr #1
+```
+Recall that a `@` sign means that this is a global identifier and it is external
+`unnamed_addr` means that the address is not significant.
+
+```
+define internal void @std::sys_common::backtrace::__rust_begin_short_backtrace::hfb9be5a6e963bdda(void ()* %f)
+   unnamed_addr #0 personality 
+   i32 (i32, i32, i64, %"unwind::libunwind::_Unwind_Exception"*, %"unwind::libunwind::_Unwind_Context"*)* @rust_eh_personality {
+```
+`#0` is the attributes name I think.
+`personality constant` allows a function to specify what function to use for
+exception handling.
+
+
+### Structures
+Normal (non-packed) struct:
+```
+%Foo = type {
+  i32,           // no member name, uses index 0
+  double }       // no member name, uses index 1
+```
+So notice that we use indexed instead of named members. But we don't used the
+indexes directly as in %someFoo.0, but instead we use `getelementptr` (GEP).
+
+Packed structs:
+```
+%Foo = type <{
+  i32,           // no member name, uses index 0
+  double }>      // no member name, uses index 1
+```
+
+
+### Casts
+There are 9 different types of casts in llvm, Bitwise casts which are type
+casts, zero-exteding casts, sign-extending casts, truncation-casts,
+floating-point extending casts, address-space casts (pointer casts), Pointer-to-
+integer casts, etc.
+
+#### Bitwise casts (bitcast)
+```c
+  Foo *foo = (Foo *) malloc(sizeof(Foo));
+```
+
+```llvm
+  %1 = call i8* @malloc(i32 4)
+  %foo = bitcast i8* %1 to %Foo*
+```
+
+### Types
+* `i1` is a one-bit integer (which is used for booleans for example)
+* `i32` is a 32-bit integer
+* `iN` is a N-bit integer
+
+Pointer types:
+* [4 x i32]* A pointer to array of four i32 values
+* i32 addrspace(5)* A pointer to an i32 value that resides in address space 5.
+* i32 (i32*) * A pointer to a function that takes an i32*, returning an i32.
+* i8* can be used as pointer to void.
+
+### Metadata
+
+
+
 
 #### Basic blocks
 These begin with an optional label, and end with a termination instruction like
@@ -244,6 +370,7 @@ going to operatate on. The second operand is the base pointer itself.
 ...
 
 getelementptr inbounds ([10 x i8], [10 x i8]* @.str.2, i64 0, i64 0)) 
+
 base type: [10 x i8]
 base ptr:  [10 x i8]* @.str.2
 i64 0: base ptr offset, which is a pointer to [10 x i8]
@@ -265,6 +392,8 @@ getelementptr inbounds ([3 x i8], [3 x i8]* @.str.2, i64 0, i64 0))
                        [  0  ][ 1  ][  2  ]            |
                           ^                            |
                           +----------------------------+
+
+#.str.2 will be equal to 'B'
 ```
 Notice that the type pointed to by the first offset is an array, in this case
 it is pointing to the same place as the base pointer. If we want to get a
@@ -281,6 +410,7 @@ getelementptr inbounds ([3 x i8], [3 x i8]* @.str.2, i64 0, i64 1))
                        [  0  ][ 1  ][  2  ]            |
                           ^                            |
                           +----------------------------+
+#.str.2 will be equal to 'a'
 ```
 Notice what happens if we use a larger offset for the first index, this is
 like incrementing a pointer
