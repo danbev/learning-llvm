@@ -169,21 +169,21 @@ For example:
 ```
   store i32 %0, i32* %2, align 4                                                
 ```
-So this is saying store the value that exists in register/local %0 which is of
-type i32 into %2 as a pointer to i32.
+So this is saying store the value that exists in register/local `%0` which is of
+type `i32` into `%2` as a pointer to `i32`.
 
 #### load instruction
 
 ```
   %3 = load i32, i32* %2, align 4                                               
 ```
-Load a i32 from %2 (which is a pointer) which I'm guessing is dereferenced?
+Load a `i32` from `%2` (which is a pointer) which I'm guessing is dereferenced?
 
 
 #### arrays
 Are declared like this:
 ```
-%something = type [nr x type]
+%something = type [size/len x type]
 ```
 For example:
 ```
@@ -208,21 +208,23 @@ Taking a look at a more complicated example:
 ```
 %"unwind::libunwind::_Unwind_Exception" = type { i64, void (i32, %"unwind::libunwind::_Unwind_Exception"*)*, [6 x i64] }
 ```
-So the first part is just the name of the variable, and we can see that this is
-a struct where the first member is a i64 value, the second is a function pointer
-which takes a i32, and then a pointer to a struct of this same time).
+So the first part is just the name of the variable which needs quotes because of
+the characters used like `::`, and we can see that this is a struct where the
+first member is a i64 value, the second is a function pointer which takes a
+`i32`, and then a pointer to a struct of this same time. The third argument
+is an array of size/len 6 and the types of the entries are `i64`.
 
 Now, if we take a look in the rust source code we can find
 `library/unwind/src/libunwind.rs`:
 ```rust
-#[repr(C)]                                                                      
-pub struct _Unwind_Exception {                                                  
-    pub exception_class: _Unwind_Exception_Class,                               
-    pub exception_cleanup: _Unwind_Exception_Cleanup_Fn,                        
-    pub private: [_Unwind_Word; unwinder_private_data_size],                    
-}   
+#[repr(C)]
+pub struct _Unwind_Exception {
+    pub exception_class: _Unwind_Exception_Class,
+    pub exception_cleanup: _Unwind_Exception_Cleanup_Fn,
+    pub private: [_Unwind_Word; unwinder_private_data_size],
+}
 
-pub type _Unwind_Exception_Cleanup_Fn =                                         
+pub type _Unwind_Exception_Cleanup_Fn =
     extern "C" fn(unwind_code: _Unwind_Reason_Code, exception: *mut _Unwind_Exception);
 ```
 So we can see that the `_Unwind_Exception_Cleanup_Fn` is the second parameter
@@ -240,7 +242,7 @@ pub enum _Unwind_Context {}
 And notice that this is an empty enum, so it does not have any values but it
 can have associated functions.
 
-
+```
 @vtable.0 = private unnamed_addr constant
      <{ i8*, [16 x i8], i8*, i8*, i8* }>
      <{ i8* bitcast (void (i64**)* @"core::ptr::drop_in_place$LT$std..rt..lang_start$LT$$LP$$RP$$GT$..$u7b$$u7b$closure$u7d$$u7d$$GT$::hfd0e41c7184d2d5c" to i8*), [16 x i8] c"\08\00\00\00\00\00\00\00\08\00\00\00\00\00\00\00", i8* bitcast (i32 (i64**)* @"core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h6376c1087f8195c9" to i8*), i8* bitcast (i32 (i64**)* @"std::rt::lang_start::_$u7b$$u7b$closure$u7d$$u7d$::h4a18ec8e9cd2a4c5" to i8*), i8* bitcast (i32 (i64**)* @"std::rt::lang_start::_$u7b$$u7b$closure$u7d$$u7d$::h4a18ec8e9cd2a4c5" to i8*) }>, align 8
@@ -261,22 +263,23 @@ define internal void @std::sys_common::backtrace::__rust_begin_short_backtrace::
    unnamed_addr #0 personality 
    i32 (i32, i32, i64, %"unwind::libunwind::_Unwind_Exception"*, %"unwind::libunwind::_Unwind_Context"*)* @rust_eh_personality {
 ```
-`#0` is the attributes name I think.
+`#0` is the attribute index.
 `personality constant` allows a function to specify what function to use for
 exception handling.
 
 
 ### Structures
-Normal (non-packed) struct:
+Normal (non-packed/not padded)) struct:
 ```
 %Foo = type {
   i32,           // no member name, uses index 0
   double }       // no member name, uses index 1
 ```
-So notice that we use indexed instead of named members. But we don't used the
-indexes directly as in %someFoo.0, but instead we use `getelementptr` (GEP).
+So notice that we use indexes instead of named members. But we don't use the
+indexes directly as in %someFoo.0, but instead we use `getelementptr` (GEP)
+(more on this instruction later).
 
-Packed structs:
+Packed structs (padded):
 ```
 %Foo = type <{
   i32,           // no member name, uses index 0
@@ -286,7 +289,7 @@ Packed structs:
 
 ### Casts
 There are 9 different types of casts in llvm, Bitwise casts which are type
-casts, zero-exteding casts, sign-extending casts, truncation-casts,
+casts, zero-extending casts, sign-extending casts, truncation-casts,
 floating-point extending casts, address-space casts (pointer casts), Pointer-to-
 integer casts, etc.
 
