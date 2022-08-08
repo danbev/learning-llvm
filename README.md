@@ -1,13 +1,13 @@
 ### Learning llvm
+Notes and code samples for learning LLVM.
 
+[Language Reference](https://llvm.org/docs/LangRef.html)
 
 ### Intermediate Representation (IR)
 The contents of the files in this section represent a module in llvm which
 is the top level structure.
 
 Local values are simliar to registers in assembly language and start with `%`.
-
-https://llvm.org/docs/LangRef.html
 
 #### bitcode
 The following section will work on an example that looks like this:
@@ -50,7 +50,7 @@ attributes #0 = { noinline nounwind optnone uwtable "correctly-rounded-divide-sq
 !0 = !{i32 1, !"wchar_size", i32 4}
 !1 = !{!"clang version 9.0.1 (Fedora 9.0.1-2.fc31)"}
 ```
-The sections below will go through the fields.
+The sections below will go through the above fields.
 
 To generate the assemble representation:
 ```console
@@ -64,7 +64,7 @@ $ llvm-as simple.ll -o simple.bc
 ```
 
 ### Demangling
-It can sometime be difficult to read the IR when the front end uses name
+It can sometimes be difficult to read the IR when the front end uses name
 mangling. This can be demangeled using:
 ```console
 $ $ cat main.ll | llvm-cxxfilt
@@ -85,6 +85,7 @@ type:<size>:<abi>:<preferred>
 
 `m:e' stands for name mangling and `e` specified that `ELF` name mangling is
 used.
+
 `i64:64` means that 64 bit integer is 64 bits.
 
 ### functions declarations
@@ -101,8 +102,8 @@ for `dynamic shared object`.
 The following `i32` is the return value, followed by the name of the function.
 Notice the `@main` specifies this as a global.
 
-And main takes one i32 which will be stored in %0, and an pointer-to-pointer
-of i8 in %1.
+And main takes one `i32` which will be stored in `%0`, and a pointer-to-pointer
+of `i8` in `%1`.
 
 Then we have the following in the body of the function:
 ```
@@ -116,7 +117,7 @@ define dso_local i32 @something(i32) #0 {
 }
 ```
 Notice `#0` which specifies function attributes (listed further down in the
-file:
+file):
 ```
 attributes #0 = { noinline nounwind optnone uwtable
 "correctly-rounded-divide-sqrt-fp-math"="false" "disable-tail-calls"="false"
@@ -148,11 +149,14 @@ define dso_local i32 @something(i32) #0 {
   ret i32 %4                                                                    
 }
 ```
-First space on the stack will be allocated that can hold an i32.
+First space on the stack will be allocated (alloca) that can hold an `i32`.
 Next, we store the value in `%0` which is the passed in `nr`, which is stored
-in `%2`.
-Next, the value stored in `%2` will be loaded into `%3` followed by calling
+in the stack (allocated in the previous instruction) `%2`.
+
+Next, the value stored in `%2` will be loaded into `%3`, followed by calling
 `add` with produces a type of `i32` and stores the result in `%4`.
+`nsw` stands for `No Signed Wrap` which means that if there signed overflow the
+result of this operation will be a poison value.
 
 
 #### store instruction
@@ -308,8 +312,66 @@ Pointer types:
 * i8* can be used as pointer to void.
 
 ### Metadata
+One of the main motivations for adding metadata was for debugging information.
+Recall that ELF is the Excecutable and Linkable Format, and it contains all the
+info required to load an object file (very simplified but I've written about
+ELF before). It also contains debug information and the format most commonly
+used in ELF is DWARF (see the connection elves and dwarfes).
+
+In llvm IR you might find the following `!3`:
+```llmv
+%_4 = load void ()*, void ()** %0, align 8, !nonnull !3, !noundef !3
+```
+The `!3` refers to a metadata section later inte file:
+```
+!0 = !{i32 7, !"PIC Level", i32 2}                                              
+!1 = !{i32 7, !"PIE Level", i32 2}                                              
+!2 = !{i32 2, !"RtLibUseGOT", i32 1}                                            
+!3 = !{}                                                                        
+!4 = !{i32 3310276}
+```
+
+### landingpad
+This is an llvm instruction which specifies this basic block as a landingpad
+for exceptions. This corresponds to the code of catch region of a try-catch
+block. For example:
+```llvm
+cleanup:                                          ; preds = %bb1
+  %1 = landingpad { i8*, i32 }
+          cleanup
+  %2 = extractvalue { i8*, i32 } %1, 0
+  %3 = extractvalue { i8*, i32 } %1, 1
+  %4 = getelementptr inbounds { i8*, i32 }, { i8*, i32 }* %0, i32 0, i32 0
+  store i8* %2, i8** %4, align 8
+  %5 = getelementptr inbounds { i8*, i32 }, { i8*, i32 }* %0, i32 0, i32 1
+  store i32 %3, i32* %5, align 8
+  br label %bb3
+```
+In this case the optional `cleanup` flags indicates that this is a landing pad
+for a cleanup, which I think is for running destructors/drop functions.
+In this case this landing pad can catche a struct with a i8* member and a 32
+member.
+
+### Invoke instruction
+Lets take the following example of an invoke instruction and try to understand
+it;
+```llvm
+%2 = invoke i32 @"std::rt::lang_start::_$u7b$$u7b$closure$u7d$$u7d$::h4a18ec8e9cd2a4c5"(i64** align 8 %_1)
+          to label %bb1 unwind label %cleanup
+```
+
+* `i32` is the return type of the function being called.
+*  `@"std::rt::lang_start::_$u7b$$u7b$closure$u7d$$u7d$::h4a18ec8e9cd2a4c5"`
+is the function pointer.
+*  `i64** align 8 %_1` are the arguments passed to the function.
+*  `to label %bb1` is the basic block to which control will be passed if the
+called function returns using `ret`.
+* unwind is a mandatory (non-optional) part of the invoke instruction
+* `label %cleanup` is the basic block to which control will be passed if the
+called functions returns using `resume`.
 
 
+### Resume instruction
 
 
 #### Basic blocks
@@ -591,3 +653,6 @@ $ sudo yum install libunwind-devel
 ```
 $ readelf --debug-dump=frames libunwind
 ```
+
+### poison value
+TODO:
