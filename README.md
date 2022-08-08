@@ -297,11 +297,13 @@ integer casts, etc.
 ```c
   Foo *foo = (Foo *) malloc(sizeof(Foo));
 ```
-
+Would turn into the following LLVM IR:
 ```llvm
   %1 = call i8* @malloc(i32 4)
   %foo = bitcast i8* %1 to %Foo*
 ```
+Notice that we first have the call to `@malloc` and then the second instruction
+does the cast.
 
 ### Types
 * `i1` is a one-bit integer (which is used for booleans for example)
@@ -309,9 +311,9 @@ integer casts, etc.
 * `iN` is a N-bit integer
 
 Pointer types:
-* [4 x i32]* A pointer to array of four i32 values
-* i32 addrspace(5)* A pointer to an i32 value that resides in address space 5.
-* i32 (i32*) * A pointer to a function that takes an i32*, returning an i32.
+* [4 x i32]* A pointer to array of four `i32` values
+* i32 addrspace(5)* A pointer to an `i32` value that resides in address space 5.
+* i32 (i32*) * A pointer to a function that takes an `i32*`, returning an `i32`.
 * i8* can be used as pointer to void.
 
 ### Metadata
@@ -319,13 +321,13 @@ One of the main motivations for adding metadata was for debugging information.
 Recall that ELF is the Excecutable and Linkable Format, and it contains all the
 info required to load an object file (very simplified but I've written about
 ELF before). It also contains debug information and the format most commonly
-used in ELF is DWARF (see the connection elves and dwarfes).
+used in ELF is DWARF (see the connection of names; elves and dwarfes).
 
 In llvm IR you might find the following `!3`:
 ```llmv
 %_4 = load void ()*, void ()** %0, align 8, !nonnull !3, !noundef !3
 ```
-The `!3` refers to a metadata section later inte file:
+The `!3` refers to an index into the metadata section later inte file:
 ```
 !0 = !{i32 7, !"PIC Level", i32 2}                                              
 !1 = !{i32 7, !"PIE Level", i32 2}                                              
@@ -351,12 +353,15 @@ cleanup:                                          ; preds = %bb1
   br label %bb3
 ```
 In this case the optional `cleanup` flags indicates that this is a landing pad
-for a cleanup, which I think is for running destructors/drop functions.
-In this case this landing pad can catche a struct with a i8* member and a 32
+for a cleanup, which means that this landingpad should always be entered, whic
+I think can be used for running destructors/drop functions.
+In this case this landing pad can catch a struct with a i8* member and a 32
 member.
 
+Other possibilities for clauses, apart from `cleanup` are `catch`, and `filter`. 
+
 ### Invoke instruction
-Lets take the following example of an invoke instruction and try to understand
+Lets take the following example of an `invoke` instruction and try to understand
 it;
 ```llvm
 %2 = invoke i32 @"std::rt::lang_start::_$u7b$$u7b$closure$u7d$$u7d$::h4a18ec8e9cd2a4c5"(i64** align 8 %_1)
@@ -375,14 +380,14 @@ called functions returns using `resume`.
 
 
 ### Resume instruction
-
+TODO:
 
 #### Basic blocks
 These begin with an optional label, and end with a termination instruction like
 branch (br) or return (ret).
 
 #### Branch (br)
-The br instruction has two forms, one where there is a condition and one that
+The `br` instruction has two forms, one where there is a condition and one that
 is an unconditional branch.
 ```
 br i1, label_if_true, label_if_false
