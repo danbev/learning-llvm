@@ -247,7 +247,6 @@ can have associated functions.
      <{ i8*, [16 x i8], i8*, i8*, i8* }>
      <{ i8* bitcast (void (i64**)* @"core::ptr::drop_in_place$LT$std..rt..lang_start$LT$$LP$$RP$$GT$..$u7b$$u7b$closure$u7d$$u7d$$GT$::hfd0e41c7184d2d5c" to i8*), [16 x i8] c"\08\00\00\00\00\00\00\00\08\00\00\00\00\00\00\00", i8* bitcast (i32 (i64**)* @"core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h6376c1087f8195c9" to i8*), i8* bitcast (i32 (i64**)* @"std::rt::lang_start::_$u7b$$u7b$closure$u7d$$u7d$::h4a18ec8e9cd2a4c5" to i8*), i8* bitcast (i32 (i64**)* @"std::rt::lang_start::_$u7b$$u7b$closure$u7d$$u7d$::h4a18ec8e9cd2a4c5" to i8*) }>, align 8
 
-```
 ; Function Attrs: nonlazybind uwtable                                           
 declare i32 @rust_eh_personality(i32,
     i32,
