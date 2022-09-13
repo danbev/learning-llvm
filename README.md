@@ -335,6 +335,17 @@ The `!3` refers to an index into the metadata section later inte file:
 !4 = !{i32 3310276}
 ```
 
+### Attributes
+Are markers that define properties on functions, parameters and return values.
+
+#### noalias
+Means that memory access through a pointer is exclusive, so there are no other
+pointers to what this pointer points to.
+
+#### nocapture
+The pointer is not stored in a global or other memory location that outlives
+the function.
+
 ### landingpad
 This is an llvm instruction which specifies this basic block as a landingpad
 for exceptions. This corresponds to the code of catch region of a try-catch
